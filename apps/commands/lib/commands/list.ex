@@ -7,6 +7,7 @@ defmodule UDB.Commands.List do
 
   @list "list"
   @meta "list-meta"
+  @separator ":"
   @list_min_seq 1000
   @list_max_seq (1 <<< 31) - 1000
   @list_initial_seq round(@list_min_seq + (@list_max_seq - @list_min_seq) / 2)
