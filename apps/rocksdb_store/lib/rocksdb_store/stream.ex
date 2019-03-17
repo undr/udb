@@ -3,12 +3,8 @@ defmodule UDB.RocksDBStore.Stream do
   Implements various stream operations
   """
 
-  alias UDB.RocksDBStore
   alias UDB.RocksDBStore.Iterator
 
-  @type query :: {atom(), binary()} | {atom(), {atom(), binary()}} | {atom(), {binary(), binary()}}
-
-  @spec create(connection :: RocksDBStore.t(), query :: query(), opts :: RocksDBStore.read_options()) :: any()
   def create(connection, query, opts \\ []) do
     {action, start, range_opts} = parse_query(query)
     stream(connection, action, start, Keyword.merge(opts, range_opts))

@@ -1,3 +1,4 @@
 %{"dialyxir": {:hex, :dialyxir, "0.5.1", "b331b091720fd93e878137add264bac4f644e1ddae07a70bf7062c7862c4b952", [:mix], []},
   "eleveldb": {:hex, :eleveldb, "2.2.19", "81339beb68da0a5cdff8662d5f4e8089b83530a7b8238d3f63b734a4d4c8040d", [:rebar3], []},
+  "elixir_uuid": {:hex, :elixir_uuid, "1.2.0", "ff26e938f95830b1db152cb6e594d711c10c02c6391236900ddd070a6b01271d", [:mix], []},
   "rocksdb": {:hex, :rocksdb, "1.0.0", "887399657f50cbdb2c680051b0cdc9435baf96bd1193ca3c868a7217670567e5", [:rebar3], []}}

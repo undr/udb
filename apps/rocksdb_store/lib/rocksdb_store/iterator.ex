@@ -3,19 +3,19 @@ defmodule UDB.RocksDBStore.Iterator do
   An iterator can be used to traverse the data store.
   """
 
-  defstruct [ref: nil, status: :closed, keys_only: false, opts: []]
+  defstruct [ref: nil, state: :closed, keys_only: false, opts: []]
 
   @doc """
   Opens and returns an interator which can be used to traverse the
   data store using the `move/2` function. It can be
   closed again using the `close/1` function.
   """
-  def create(%UDB.RocksDBStore{ref: db_ref, status: :open}, opts \\ []) do
+  def create(%UDB.RocksDBStore{ref: dbref, state: :open}, opts \\ []) do
     keys_only = Keyword.get(opts, :keys_only, false)
     opts = Keyword.delete(opts, :keys_only)
 
-    {:ok, iterator_ref} = :rocksdb.iterator(db_ref, opts)
-    {:ok, %__MODULE__{ref: iterator_ref, status: :open, keys_only: keys_only, opts: opts}}
+    {:ok, iterator_ref} = :rocksdb.iterator(dbref, opts)
+    {:ok, %__MODULE__{ref: iterator_ref, state: :open, keys_only: keys_only, opts: opts}}
   end
 
   @doc """
@@ -34,7 +34,7 @@ defmodule UDB.RocksDBStore.Iterator do
 
   Every operation will return `{:ok, key, value}`, or `{:ok, key}` if the `:keys_only` option was set.
   """
-  def move(%__MODULE__{ref: iterator_ref, status: :open, keys_only: keys_only}, action) do
+  def move(%__MODULE__{ref: iterator_ref, state: :open, keys_only: keys_only}, action) do
     case :rocksdb.iterator_move(iterator_ref, action) do
       {:ok, key, value} -> if keys_only, do: {:ok, key}, else: {:ok, key, value}
       error             -> error
@@ -44,9 +44,9 @@ defmodule UDB.RocksDBStore.Iterator do
   @doc """
   Close the iterator
   """
-  def close(%__MODULE__{status: :closed} = iterator), do: iterator
-  def close(%__MODULE__{ref: iterator_ref, status: :open}) do
+  def close(%__MODULE__{state: :closed} = iterator), do: iterator
+  def close(%__MODULE__{ref: iterator_ref, state: :open}) do
     :ok = :rocksdb.iterator_close(iterator_ref)
-    %__MODULE__{ref: nil, status: :closed}
+    %__MODULE__{ref: nil, state: :closed}
   end
 end

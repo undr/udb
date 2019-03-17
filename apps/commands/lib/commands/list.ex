@@ -1,20 +1,16 @@
 defmodule UDB.Commands.List do
   use Bitwise
 
-  alias UDB.RocksDBStore.Atomic
-
-  @store Atomic
-
   @list "list"
   @meta "list-meta"
   @separator ":"
   @list_min_seq 1000
   @list_max_seq (1 <<< 31) - 1000
   @list_initial_seq round(@list_min_seq + (@list_max_seq - @list_min_seq) / 2)
+  @store UDB.Store
 
-  def all(conn, key) do
-    @store.execute(conn, fn atomic -> unsafe_all(atomic, key) end)
-  end
+  def all(conn, key),
+    do: atomic(conn, fn atomic -> unsafe_all(atomic, key) end)
 
   defp unsafe_all(conn, key) do
     conn
@@ -23,9 +19,8 @@ defmodule UDB.Commands.List do
     |> Enum.into([])
   end
 
-  def index(conn, key, index) do
-    @store.execute(conn, fn atomic -> unsafe_index(atomic, key, index) end)
-  end
+  def index(conn, key, index),
+    do: atomic(conn, fn atomic -> unsafe_index(atomic, key, index) end)
 
   # TODO: Check if we should use `RocksDBStore.Iterator.move/2` instead of `RocksDBStore.get/2`
   defp unsafe_index(conn, key, index) do
@@ -36,9 +31,8 @@ defmodule UDB.Commands.List do
     end
   end
 
-  def range(conn, key, start, stop) do
-    @store.execute(conn, fn atomic -> unsafe_range(atomic, key, start, stop) end)
-  end
+  def range(conn, key, start, stop),
+    do: atomic(conn, fn atomic -> unsafe_range(atomic, key, start, stop) end)
 
   defp unsafe_range(conn, key, start, stop) do
     meta_key = encode_meta_key(key)
@@ -53,9 +47,8 @@ defmodule UDB.Commands.List do
     end
   end
 
-  def set(conn, key, index, value) do
-    @store.execute(conn, fn atomic -> unsafe_set(atomic, key, index, value) end)
-  end
+  def set(conn, key, index, value),
+    do: atomic(conn, fn atomic -> unsafe_set(atomic, key, index, value) end)
 
   defp unsafe_set(conn, key, index, value) do
     meta_key = encode_meta_key(key)
@@ -76,9 +69,8 @@ defmodule UDB.Commands.List do
     end
   end
 
-  def trim(conn, key, start, stop) do
-    @store.execute(conn, fn atomic -> unsafe_trim(atomic, key, start, stop) end)
-  end
+  def trim(conn, key, start, stop),
+    do: atomic(conn, fn atomic -> unsafe_trim(atomic, key, start, stop) end)
 
   defp unsafe_trim(conn, key, start, stop) do
     meta_key = encode_meta_key(key)
@@ -118,31 +110,23 @@ defmodule UDB.Commands.List do
   end
 
   def rpush(conn, key, value) when is_binary(value),
-    do: @store.execute(conn, fn atomic -> unsafe_push(atomic, key, [value], :tail) end)
+    do: atomic(conn, fn atomic -> unsafe_push(atomic, key, [value], :tail) end)
   def rpush(conn, key, values) when is_list(values),
-    do: @store.execute(conn, fn atomic -> unsafe_push(atomic, key, values, :tail) end)
-
-  def rpushx do
-    {:error, {:cmd, :not_implemented}}
-  end
+    do: atomic(conn, fn atomic -> unsafe_push(atomic, key, values, :tail) end)
 
   def rpop(conn, key),
-    do: @store.execute(conn, fn atomic -> unsafe_pop(atomic, key, :tail) end)
+    do: atomic(conn, fn atomic -> unsafe_pop(atomic, key, :tail) end)
 
   def lpush(conn, key, value) when is_binary(value),
-    do: @store.execute(conn, fn atomic -> unsafe_push(atomic, key, [value], :head) end)
+    do: atomic(conn, fn atomic -> unsafe_push(atomic, key, [value], :head) end)
   def lpush(conn, key, values) when is_list(values),
-    do: @store.execute(conn, fn atomic -> unsafe_push(atomic, key, values, :head) end)
-
-  def lpushx do
-    {:error, {:cmd, :not_implemented}}
-  end
+    do: atomic(conn, fn atomic -> unsafe_push(atomic, key, values, :head) end)
 
   def lpop(conn, key),
-    do: @store.execute(conn, fn atomic -> unsafe_pop(atomic, key, :head) end)
+    do: atomic(conn, fn atomic -> unsafe_pop(atomic, key, :head) end)
 
   def len(conn, key),
-    do: @store.execute(conn, fn atomic -> unsafe_len(atomic, key) end)
+    do: atomic(conn, fn atomic -> unsafe_len(atomic, key) end)
 
   defp unsafe_len(conn, key) do
     with meta_key = encode_meta_key(key), {:ok, _, _, size} <- get_meta(conn, meta_key),
@@ -230,6 +214,12 @@ defmodule UDB.Commands.List do
     do: size + index
   defp normalize_index(index, _size),
     do: index
+
+  defp atomic(conn, fun, opts \\ []) do
+    if @store.support_atomic?(conn),
+      do: @store.atomic(conn, fun, opts),
+      else: fun.(conn)
+  end
 
   defp encode_meta_key(key),
     do: "#{@meta}#{@separator}#{key}"

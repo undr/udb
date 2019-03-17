@@ -1,53 +1,46 @@
 defmodule UDB.Commands.Hash do
-  alias UDB.RocksDBStore.Atomic
-
   @hash "hash"
   @size "hash-size"
   @separator ":"
-  @store Atomic
+  @store UDB.Store
 
   def getall(conn, key),
-    do: @store.execute(conn, fn atomic -> unsafe_getall(atomic, key) end)
+    do: atomic(conn, fn atomic -> unsafe_getall(atomic, key) end)
 
   def keys(conn, key),
-    do: @store.execute(conn, fn atomic -> unsafe_keys(atomic, key) end)
+    do: atomic(conn, fn atomic -> unsafe_keys(atomic, key) end)
 
   def values(conn, key),
-    do: @store.execute(conn, fn atomic -> unsafe_values(atomic, key) end)
+    do: atomic(conn, fn atomic -> unsafe_values(atomic, key) end)
 
-  def get(conn, key, field) do
-    @store.execute(conn, fn atomic -> unsafe_get(atomic, key, field) end)
-  end
+  def get(conn, key, field),
+    do: atomic(conn, fn atomic -> unsafe_get(atomic, key, field) end)
 
-  def delall(conn, key) do
-    @store.execute(conn, fn atomic -> unsafe_delall(atomic, key) end)
-  end
+  def delall(conn, key),
+    do: atomic(conn, fn atomic -> unsafe_delall(atomic, key) end)
 
   def del(conn, key, field) when is_binary(field),
     do: del(conn, key, [field])
-  def del(conn, key, fields) do
-    @store.execute(conn, fn atomic -> unsafe_del(atomic, key, fields) end)
-  end
+  def del(conn, key, fields),
+    do: atomic(conn, fn atomic -> unsafe_del(atomic, key, fields) end)
 
   def set(conn, key, map) when is_map(map),
     do: set(conn, key, Enum.map(map, fn kv -> kv end))
   def set(conn, key, pair) when is_tuple(pair),
     do: set(conn, key, [pair])
-  def set(conn, key, pairs) do
-    @store.execute(conn, fn atomic -> unsafe_set(atomic, key, pairs) end)
-  end
+  def set(conn, key, pairs),
+    do: atomic(conn, fn atomic -> unsafe_set(atomic, key, pairs) end)
 
-  def len(conn, key) do
-    @store.execute(conn, fn atomic -> unsafe_len(atomic, key) end)
-  end
+  def len(conn, key),
+    do: atomic(conn, fn atomic -> unsafe_len(atomic, key) end)
 
-  def unsafe_getall(conn, key),
+  defp unsafe_getall(conn, key),
     do: map(conn, key) |> Enum.into(%{})
 
-  def unsafe_keys(conn, key),
+  defp unsafe_keys(conn, key),
     do: map(conn, key, fn {key, _value} -> key end) |> Enum.into([])
 
-  def unsafe_values(conn, key),
+  defp unsafe_values(conn, key),
     do: map(conn, key, fn {_key, value} -> value end) |> Enum.into([])
 
   defp unsafe_get(conn, key, field) do
@@ -141,6 +134,12 @@ defmodule UDB.Commands.Hash do
       <<_prefix::binary-size(size), field::binary()>> -> field
       _ -> throw({:error, {:cmd, :cannot_extract_field_name}})
     end
+  end
+
+  defp atomic(conn, fun, opts \\ []) do
+    if @store.support_atomic?(conn),
+      do: @store.atomic(conn, fun, opts),
+      else: fun.(conn)
   end
 
   defp encode_key(key, field),

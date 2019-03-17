@@ -1,16 +1,16 @@
-defmodule UDB.Commands.Mixfile do
+defmodule UDB.ETSStore.MixProject do
   use Mix.Project
 
   def project do
     [
-      app: :commands,
+      app: :ets_store,
       version: "0.1.0",
       build_path: "../../_build",
       config_path: "../../config/config.exs",
       deps_path: "../../deps",
       lockfile: "../../mix.lock",
-      elixir: "~> 1.5",
-      start_permanent: Mix.env == :prod,
+      elixir: "~> 1.8",
+      start_permanent: Mix.env() == :prod,
       deps: deps()
     ]
   end
@@ -25,8 +25,7 @@ defmodule UDB.Commands.Mixfile do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:rocksdb_store, in_umbrella: true},
-      {:ets_store, in_umbrella: true}
+      {:store, in_umbrella: true}
     ]
   end
 end
