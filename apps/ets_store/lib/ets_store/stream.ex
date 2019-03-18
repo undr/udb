@@ -1,5 +1,5 @@
 defmodule UDB.ETSStore.Stream do
-	@moduledoc """
+  @moduledoc """
   Implements various stream operations
   """
 
@@ -26,19 +26,14 @@ defmodule UDB.ETSStore.Stream do
     do: :ets.select_reverse(conn.ref, expression)
 
   defp build_match_expression(first, _) when is_binary(first),
-    # do: :ets.fun2ms(fn {key, value} when key >= first -> {key, value} end)
     do: [{{:"$1", :"$2"}, [{:>=, :"$1", first}], [{{:"$1", :"$2"}}]}]
   defp build_match_expression({:first, last}, false) when is_binary(last),
-    # do: :ets.fun2ms(fn {key, value} when key < last -> {key, value} end)
     do: [{{:"$1", :"$2"}, [{:<, :"$1", last}], [{{:"$1", :"$2"}}]}]
   defp build_match_expression({:first, last}, true) when is_binary(last),
-    # do: :ets.fun2ms(fn {key, value} when key <= last -> {key, value} end)
     do: [{{:"$1", :"$2"}, [{:"=<", :"$1", last}], [{{:"$1", :"$2"}}]}]
   defp build_match_expression({first, last}, false) when is_binary(first) and is_binary(last),
-    # do: :ets.fun2ms(fn {key, value} when key >= first and key < last -> {key, value} end)
     do: [{{:"$1", :"$2"}, [{:andalso, {:>=, :"$1", first}, {:<, :"$1", last}}], [{{:"$1", :"$2"}}]}]
   defp build_match_expression({first, last}, true) when is_binary(first) and is_binary(last),
-    # do: :ets.fun2ms(fn {key, value} when key >= first and key <= last -> {key, value} end)
     do: [{{:"$1", :"$2"}, [{:andalso, {:>=, :"$1", first}, {:"=<", :"$1", last}}], [{{:"$1", :"$2"}}]}]
   defp build_match_expression(_, _),
     do: nil
