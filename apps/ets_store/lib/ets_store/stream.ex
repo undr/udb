@@ -3,11 +3,6 @@ defmodule UDB.ETSStore.Stream do
   Implements various stream operations
   """
 
-  alias UDB.ETSStore
-
-  @type query :: {atom(), binary()} | {atom(), {atom(), binary()}} | {atom(), {binary(), binary()}}
-
-  @spec create(connection :: ETSStore.t(), query :: query(), opts :: []) :: any()
   def create(connection, query, opts \\ []) do
     case parse_query(query) do
       {_, nil} -> []
@@ -17,9 +12,7 @@ defmodule UDB.ETSStore.Stream do
   end
 
   defp stream(connection, direction, expression, opts) do
-    values = connection.ref
-    |> :ets.select(expression)
-    |> make_direction(direction)
+    values = make_request(connection, expression, direction)
 
     case Keyword.get(opts, :keys_only, false) do
       true -> Stream.map(values, fn {key, _} -> key end)
@@ -27,10 +20,10 @@ defmodule UDB.ETSStore.Stream do
     end
   end
 
-  defp make_direction(values, :forward),
-    do: values
-  defp make_direction(values, :backward),
-    do: Enum.reverse(values)
+  defp make_request(conn, expression, :forward),
+    do: :ets.select(conn.ref, expression)
+  defp make_request(conn, expression, :backward),
+    do: :ets.select_reverse(conn.ref, expression)
 
   defp build_match_expression(first, _) when is_binary(first),
     # do: :ets.fun2ms(fn {key, value} when key >= first -> {key, value} end)
